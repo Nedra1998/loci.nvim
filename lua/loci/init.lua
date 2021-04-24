@@ -1,36 +1,20 @@
+local tbl = require('plenary.tbl')
+local config = require('loci.config')
+local workspace = require('loci.workspace')
 local M = {}
+local cmd = vim.api.nvim_command
 
-M.cache = {}
+function M.setup_hook(ws) workspace.enter_workspace(ws) end
 
-local function set_autogroup(cfg)
-    local cmd = vim.api.nvim_command
-    cmd([[augroup LociSetupHook]])
-    cmd([[autocmd! *]])
-    for key, val in pairs(cfg['workspaces']) do
-        cmd('autocmd BufEnter ' .. val['dir'] ..
-                '*.md lua require("loci.functions").workspace_enter(\"' .. key ..
-                '\")')
+function M.setup(opts)
+    config = tbl.apply_defaults(opts, config)
+    cmd('augroup LociSetupHook')
+    cmd('autocmd! *')
+    for key, value in pairs(config.workspaces) do
+        cmd('autocmd BufEnter ' .. value.directory ..
+                '* lua require("loci").setup_hook("' .. key .. '")')
     end
-    cmd([[augroup END]])
+    cmd('augroup END')
 end
 
-do
-    local default_config = {
-        default_workspace = 'loci',
-        map = true,
-        link_on_save = true,
-        workspaces = {
-            ['loci'] = {
-                dir = '~/Loci.new',
-                index = 'README.md',
-                auto_indexed = {'diary', 'notes'}
-            }
-        }
-    }
-    function M.setup(user_config)
-        M.config = vim.tbl_extend('force', default_config, user_config or {})
-
-        set_autogroup(M.config)
-    end
-end
 return M
