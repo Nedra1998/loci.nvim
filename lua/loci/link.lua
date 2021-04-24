@@ -17,9 +17,8 @@ local function case_insensitive_pattern(pattern)
 end
 
 local function find_document_path(text, cwd)
-    if DOCUMENTS == nil and config.current_workspace ~= nil then
-        DOCUMENTS = require('loci.list').list_documents(
-                        config.workspaces[config.current_workspace].directory)
+    if DOCUMENTS == nil then
+        DOCUMENTS = require('loci.list').list_documents()
     end
 
     local pattern = case_insensitive_pattern(text)
@@ -109,9 +108,10 @@ function M.insert_link(mode)
     -- link text
     local dest = find_document_path(line:sub(vbegin, vend), cwd)
     if dest == nil then
+        local default_extension = config.extensions[1]
         dest =
             line:sub(vbegin, vend):gsub('[%p%c]', ''):gsub('%s', '_'):lower() ..
-                config.defaults.extension
+                '.' .. default_extension
     end
 
     line = create_link(line, vbegin, vend, dest)
@@ -129,9 +129,7 @@ end
 
 function M.auto_insert_links()
     local list = require('loci.list')
-    if config.current_workspace == nil then return nil end
-    DOCUMENTS = list.list_documents(config.workspaces[config.current_workspace]
-                                        .directory)
+    DOCUMENTS = list.list_documents()
 
     local path = vim.fn.expand('%:p')
     local cwd = Path:new(path):parent()

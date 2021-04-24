@@ -11,15 +11,10 @@ local path = require('telescope.path')
 
 local loci = {}
 local list = require('loci.list')
-local config = require('loci.config')
 
 loci.find_zettels = function(opts)
-    if config.current_workspace == nil then return nil end
-
     local results = {}
-    for _, zettel in ipairs(list.list_documents(
-                                config.workspaces[config.current_workspace]
-                                    .directory)) do
+    for _, zettel in ipairs(list.list_documents()) do
         results[#results + 1] = zettel.path
     end
 
@@ -37,7 +32,6 @@ loci.find_zettels = function(opts)
 end
 
 loci.find_forward_links = function(opts)
-    if config.current_workspace == nil then return nil end
     if opts.cwd then
         opts.cwd = vim.fn.expand(opts.cwd)
     else
@@ -45,9 +39,7 @@ loci.find_forward_links = function(opts)
     end
 
     local results = {}
-    for _, link in ipairs(list.list_forward_links(vim.fn.expand("%:p"),
-                                                  config.workspaces[config.current_workspace]
-                                                      .directory)) do
+    for _, link in ipairs(list.list_forward_links(vim.fn.expand("%:p"))) do
         results[#results + 1] = link.dest_file
     end
 
@@ -63,8 +55,6 @@ loci.find_forward_links = function(opts)
 end
 
 loci.find_backward_links = function(opts)
-    if config.current_workspace == nil then return nil end
-
     if opts.cwd then
         opts.cwd = vim.fn.expand(opts.cwd)
     else
@@ -72,9 +62,7 @@ loci.find_backward_links = function(opts)
     end
 
     local results = {}
-    local ws = vim.fn.expand(config.workspaces[config.current_workspace]
-                                 .directory)
-    for _, link in ipairs(list.list_backward_links(vim.fn.expand("%:p"), ws)) do
+    for _, link in ipairs(list.list_backward_links(vim.fn.expand("%:p"))) do
         results[#results + 1] = path.make_relative(link.src_file, opts.cwd) ..
                                     ':' .. link.src_line .. ':0:'
     end

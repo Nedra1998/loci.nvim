@@ -1,13 +1,9 @@
 local M = {
-  current_workspace = nil,
-  defaults = {
-    extension = '.md'
-  },
-  workspaces = {
-    ['loci'] = {
-      directory = '~/Projects/loci.nvim/docs',
-    }
-  }
+    auto_link = false,
+    auto_index = false,
+    index = 'README.md',
+    directory = '~/Loci',
+    extensions = {'md', 'markdown', 'pdf'}
 }
 
 return M

@@ -1,5 +1,6 @@
 local filetype = require('plenary.filetype')
 local Path = require('plenary.path')
+local config = require('loci.config')
 local M = {}
 
 local BASENAME_PATTERN = '([^/]+)%.[^/%.]+$'
@@ -65,19 +66,16 @@ function M.get_links(file, buffer, ft)
 end
 
 -- List all documents in a given directory.
--- @param root The rood directory to search for documents in
-function M.list_documents(root)
+function M.list_documents()
     local documents = {}
-    local md_files = vim.fn.globpath(Path:new(root):expand(), '**/*.md', false,
-                                     true)
-    for _, file in ipairs(md_files) do
-        documents[#documents + 1] = {path = file, title = get_title(file)}
-    end
-
-    local pdf_files = vim.fn.globpath(Path:new(root):expand(), '**/*.pdf',
-                                      false, true)
-    for _, file in ipairs(pdf_files) do
-        documents[#documents + 1] = {path = file, title = get_title(file)}
+    local extensions = {'md'}
+    extensions = config.extensions
+    local root = Path:new(config.directory):expand()
+    for _, ext in ipairs(extensions) do
+        for _, file in
+            ipairs(vim.fn.globpath(root, '**/*.' .. ext, false, true)) do
+            documents[#documents + 1] = {path = file, title = get_title(file)}
+        end
     end
     return documents
 end
@@ -85,13 +83,11 @@ end
 -- List all links from the current document to all other valid documents in the
 -- given workspace.
 -- @param file Current document file path
--- @param root Workspace root directory
 -- @param documents Optional set of documents to search (defaults to all in
 -- workspace)
-function M.list_forward_links(file, root, documents)
+function M.list_forward_links(file, documents)
     file = Path:new(file):expand()
-    root = Path:new(root):expand()
-    documents = documents or M.list_documents(root)
+    documents = documents or M.list_documents()
     local title = get_title(file)
     local valid_links = {}
     for _, link in ipairs(M.get_links(file)) do
@@ -115,17 +111,15 @@ end
 -- List all links to this current document, searching all documents in a given
 -- workspace.
 -- @param file File to search fo links to.
--- @param root The root directory of the workspace to search.
 -- @param documents Optional set of documents to search, defaults to all of
 -- workspace
-function M.list_backward_links(file, root, documents)
+function M.list_backward_links(file, documents)
     file = Path:new(file):expand()
-    root = Path:new(root):expand()
-    documents = documents or M.list_documents(root)
+    documents = documents or M.list_documents()
     local title = get_title(file)
     local valid_links = {}
     for _, doc in ipairs(documents) do
-        local forelinks = M.list_forward_links(doc.path, root,
+        local forelinks = M.list_forward_links(doc.path, 
                                                {{path = file, title = title}})
         for _, link in ipairs(forelinks) do
             valid_links[#valid_links + 1] = link
