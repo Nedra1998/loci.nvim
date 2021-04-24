@@ -154,7 +154,7 @@ function M.auto_insert_links()
     for i, line in ipairs(lines) do
         local modified = false
         for patt, doc in pairs(patterns) do
-            local mbegin, mend = line:find(patt, mend)
+            local mbegin, mend = line:find(patt)
             if mbegin ~= nil and mend ~= nil then
                 line = create_link(line, mbegin, mend,
                                    Path:new(doc.path):make_relative(cwd))

@@ -5,8 +5,6 @@ local M = {}
 local BASENAME_PATTERN = '([^/]+)%.[^/%.]+$'
 local MARKDOWN_PATTERN = '%[[^]]+%]%(([^)]+)%)'
 
-local inspect = require('loci.inspect')
-
 local function get_markdown_header(file, max)
     max = max or 3
     local lines = vim.fn.readfile(file)
@@ -91,8 +89,8 @@ end
 -- @param documents Optional set of documents to search (defaults to all in
 -- workspace)
 function M.list_forward_links(file, root, documents)
-    file = Path:new(file):absolute()
-    root = Path:new(root):absolute()
+    file = Path:new(file):expand()
+    root = Path:new(root):expand()
     documents = documents or M.list_documents(root)
     local title = get_title(file)
     local valid_links = {}
@@ -120,9 +118,9 @@ end
 -- @param root The root directory of the workspace to search.
 -- @param documents Optional set of documents to search, defaults to all of
 -- workspace
-function M.list_back_links(file, root, documents)
-    file = Path:new(file):absolute()
-    root = Path:new(root):absolute()
+function M.list_backward_links(file, root, documents)
+    file = Path:new(file):expand()
+    root = Path:new(root):expand()
     documents = documents or M.list_documents(root)
     local title = get_title(file)
     local valid_links = {}
