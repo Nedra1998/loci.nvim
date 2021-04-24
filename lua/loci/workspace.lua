@@ -3,6 +3,7 @@ local cmd = vim.api.nvim_command
 local M = {}
 
 function M.enter_workspace()
+    if vim.bo.filetype ~= 'markdown' then return nil end
     vim.api.nvim_buf_set_keymap(0, 'n', '<CR>',
                                 [[:lua require'loci.link'.follow_or_insert_link()<CR>]],
                                 {noremap = true, silent = true})
