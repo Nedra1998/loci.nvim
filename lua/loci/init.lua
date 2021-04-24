@@ -10,8 +10,9 @@ function M.setup(opts)
     config = tbl.apply_defaults(opts, config)
     cmd('augroup LociSetupHook')
     cmd('autocmd! *')
-    cmd('autocmd BufEnter ' .. config.directory ..
-            '* lua require("loci").setup_hook()')
+    cmd('autocmd BufEnter ' .. config.directory .. '/**/*.(' ..
+            table.concat(config.extensions, '|') ..
+            ') lua require("loci").setup_hook()')
     cmd('augroup END')
 end
 
