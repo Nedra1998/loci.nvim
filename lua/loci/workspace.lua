@@ -10,7 +10,7 @@ function M.enter_workspace()
     vim.api.nvim_buf_set_keymap(0, 'v', '<CR>',
                                 [[:lua require'loci.link'.insert_link_visual()<CR>]],
                                 {noremap = true, silent = true})
-    vim.api.nvim_buf_set_keymap(0, 'n', '<BS>', [[(&modified == 0 ? ':bprevious' : ':bdelete')]],
+    vim.api.nvim_buf_set_keymap(0, 'n', '<BS>', [[(&modified == 0 ? ':bdelete<CR>' : ':bprevious<CR>')]],
                                 {noremap = true, silent = true, expr = true})
 
     cmd('augroup LociWorkspace')
