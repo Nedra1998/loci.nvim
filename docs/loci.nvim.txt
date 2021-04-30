@@ -1,0 +1,19 @@
+*loci.txt*	Minimal Neovim note taking utilitiy
+
+================================================================================
+CONTENTS                                                           *loci-contents*
+
+================================================================================
+LOCI.NVIM                                                         *loci-loci.nvim*
+
+View, edit and navigate a zettelkasten based notes system.
+
+================================================================================
+INTRODUCTION                                                   *loci-introduction*
+
+Loci.nvim provides a minimal set of tools to improve creating and navigating a
+zettelkasten based notes system. Primarily providing ease of navigation
+through forward and backward links, and simplifies and attempting to automated
+the creating of links between notes.
+
+vim:tw=78:ts=8:ft=help:norl
