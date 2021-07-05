@@ -68,11 +68,18 @@ function M.follow_link(pos)
     end
     if path == nil then return false end
 
-    path = Path:new(vim.fn.expand("%:p:h")):joinpath(path):absolute()
+    ext = vim.fn.fnamemodify(path, ':e')
 
-    local dir = vim.fn.fnamemodify(path, ':p:h')
-    if vim.fn.isdirectory(dir) == 0 then vim.fn.mkdir(dir, 'p') end
-    vim.api.nvim_command('edit ' .. path)
+    if ext == 'md' then
+      path = Path:new(vim.fn.expand("%:p:h")):joinpath(path):absolute()
+
+      local dir = vim.fn.fnamemodify(path, ':p:h')
+      if vim.fn.isdirectory(dir) == 0 then vim.fn.mkdir(dir, 'p') end
+      vim.api.nvim_command('edit ' .. path)
+    else
+      vim.fn.system('xdg-open ' .. path .. ' &')
+    end
+
     return true
 end
 
