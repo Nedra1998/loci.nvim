@@ -113,11 +113,11 @@ end
 function M.follow_or_create()
   local link = get_link()
   if link then
-    link = resolve_link(link)
     local cat = get_link_catagory(link)
     if cat ~= nil then
       fn.system(config.launcher .. ' ' .. link .. ' &')
     else
+      link = resolve_link(link)
       local dir = fn.fnamemodify(link, ':h')
       if fn.isdirectory(dir) == 0 then fn.mkdir(dir, 'p') end
       api.nvim_command('edit ' .. link)
