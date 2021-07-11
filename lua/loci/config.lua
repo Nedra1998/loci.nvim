@@ -1,6 +1,13 @@
 local M = {
+  keymaps = {
+    links = true
+  },
   workspaces = {
-    loci = { path = "~/loci" }
+    loci = { 
+      path = "~/Loci",
+      diaries = { 'diary' },
+      index_on_save = true
+    }
   },
   filetypes = {
     images = {'.png', '.jpeg', '.jpg', '.bmp', '.tif'},
