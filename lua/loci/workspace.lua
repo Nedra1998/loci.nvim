@@ -32,14 +32,14 @@ function M.on_enter(workspace)
 
   if config.workspaces[workspace].index_on_save ~= nil then
     local basepath = fn.expand(config.workspaces[workspace].path)
-    cmd('augroup Loci' .. workspace .. 'WorkspaceHook')
-    cmd('autocmd! *')
+    vim.cmd('augroup Loci' .. workspace .. 'WorkspaceHook')
+    vim.cmd('autocmd! *')
     for _, dir in pairs(config.workspaces[workspace].diaries) do
-      cmd('autocmd BufWritePost ' .. basepath .. '/' .. dir ..
+      vim.cmd('autocmd BufWritePost ' .. basepath .. '/' .. dir ..
               '/*.md lua require("loci.diary").generate_diary_index("' ..
               workspace .. '", "' .. dir .. '")')
     end
-    cmd('augroup END')
+    vim.cmd('augroup END')
   end
 
   if config.workspaces[workspace] ~= nil and config.current_workspace ~=
