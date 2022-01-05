@@ -21,16 +21,16 @@ This is the README for loci
   - `:LociJournalNext [WORKSPACE] [JOURNAL]`
   - `:LociJournal [WORKSPACE] [JOURNAL] [DATE]`
 - [ ] Only create bindings for markdown files in a workspace.
-- [ ] Create link from text below cursor
+- [x] Create link from text below cursor
   - `:LociLinkCreate`
-- [ ] Follow existing link below cursor
+- [-] Follow existing link below cursor
   - `:LociLinkFollow`
-  - [ ] Open URL in browser
+  - [x] Open URL in browser
   - [ ] Open external files with system default (`open`/`xdg-open`)
-  - [ ] Jump to section/achnor in file is specified in link
-- [ ] Follow link under cursor if present, otherwise create a new link.
+  - [x] Jump to section/achnor in file is specified in link
+- [x] Follow link under cursor if present, otherwise create a new link.
   - `:LociLinkFollowOrCreate`
-- [ ] Go back to previous buffer on `:LociLinkGoBack`
+- [x] Go back to previous buffer on `:LociLinkGoBack`
 
 #### Telescope
 
