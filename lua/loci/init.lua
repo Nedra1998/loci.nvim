@@ -1,5 +1,9 @@
---[[ this module exposes the interface of lua functions:
-define here the lua functions that activate the plugin ]]
-
-local main = require("loci.main")
 local config = require("loci.config")
+
+local M = {}
+
+function M.setup(opts)
+  config = require('plenary.tbl').apply_defaults(opts, config.cfg)
+end
+
+return M
