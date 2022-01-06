@@ -4,22 +4,39 @@ local workspace = require('loci.workspace')
 
 local M = {}
 
+--- Parse a journal configuration.
+-- This function parsers the configuration and construct a table representing
+-- the data in the config or default values.
+-- @param key The string index for the journal configuration in the config.
+-- @param cfg the table/string configuration value from the config.
+-- @returns A table containing the key, path to the journal directory, and the
+-- method/type of journal that has been configured.
 local function journal_parse_config(key, cfg)
   local path, method = nil, nil
   if type(cfg) == 'table' then
     if cfg['path'] ~= nil then
       path = cfg['path']
     else
-      path = jnl
+      path = key:lower()
     end
     method = cfg['type']
   else
-    path = jnl
+    path = key:lower()
     method = cfg
   end
   return {key = key, path = path, method = method}
 end
 
+--- Opens a journal note file in a new buffer.
+-- If `create_dirs` is set in the configuration, it will also create any
+-- required directories.
+-- @param ws A table containing the workspace name as `key`, and the workspace
+-- path as `path`.
+-- @param jnl A table containing the journal name as `key`, the journal path as
+-- `path`, and the journal method as `method`.
+-- @param time A UNIX timestamp representing a date/time to open the journal
+-- entry for. The value of `jnl.method` will specify the formatting for the
+-- filename.
 local function journal_open_note(ws, jnl, time)
   local fname = nil
   if jnl.method == nil or jnl.method:lower() == 'daily' then
@@ -61,6 +78,17 @@ local function journal_open_note(ws, jnl, time)
   vim.api.nvim_command('edit ' .. fullpath:absolute())
 end
 
+--- Loads a journal configuration
+-- @param ws_key The name of a workspace to search for, if empty or nil then the
+-- default workspace will be used.
+-- @param journal The name of a journal in the workspace to load, if empty or
+-- nil then the default journal will be used.
+-- @return The workspace configuration returned by workspace.open, or nil of no
+-- workspace found.
+-- @return The journal key in the workspace configuration, or nil if no journal
+-- was found.
+-- @return The journal configuration, or nil if no journal was found.
+-- @see workspace.open
 function M.open(ws_key, journal)
   if ws_key ~= nil and journal == nil then
     journal = ws_key
@@ -107,6 +135,16 @@ function M.open(ws_key, journal)
   end
 end
 
+--- Opens the previous entry in a selected journal
+-- Opens the previous entry in the selected/default journal, this takes into
+-- account the type of journal that is used, and will adjust the times
+-- accordingly.
+-- @param ws_key The name of a workspace to search for, if empty or nil then the
+-- default workspace will be used.
+-- @param journal The name of a journal in the workspace to load, if empty or
+-- nil then the default journal will be used.
+-- @see journal.open
+-- @see journal_open_note
 function M.previous(ws_name, journal)
   local ws, jnl, cfg = M.open(ws_name, journal)
   if ws == nil or jnl == nil or cfg == nil then return end
@@ -128,6 +166,15 @@ function M.previous(ws_name, journal)
 
   return journal_open_note({key = ws_name, path = ws.path}, jnl_cfg, time)
 end
+
+--- Opens the current entry in a selected journal
+-- Opens the current entry in the selected/default journal.
+-- @param ws_key The name of a workspace to search for, if empty or nil then the
+-- default workspace will be used.
+-- @param journal The name of a journal in the workspace to load, if empty or
+-- nil then the default journal will be used.
+-- @see journal.open
+-- @see journal_open_note
 function M.current(ws_name, journal)
   local ws, jnl, cfg = M.open(ws_name, journal)
   if ws == nil or jnl == nil or cfg == nil then return end
@@ -136,6 +183,17 @@ function M.current(ws_name, journal)
   return journal_open_note({key = ws_name, path = ws.path},
                            journal_parse_config(jnl, cfg), time)
 end
+
+--- Opens the next entry in a selected journal
+-- Opens the next entry in the selected/default journal, this takes into
+-- account the type of journal that is used, and will adjust the times
+-- accordingly.
+-- @param ws_key The name of a workspace to search for, if empty or nil then the
+-- default workspace will be used.
+-- @param journal The name of a journal in the workspace to load, if empty or
+-- nil then the default journal will be used.
+-- @see journal.open
+-- @see journal_open_note
 function M.next(ws_name, journal)
   local ws, jnl, cfg = M.open(ws_name, journal)
   if ws == nil or jnl == nil or cfg == nil then return end
@@ -157,6 +215,17 @@ function M.next(ws_name, journal)
 
   return journal_open_note({key = ws_name, path = ws.path}, jnl_cfg, time)
 end
+
+--- Opens the journal entry in a selected journal for a given date
+-- Opens the journal entry for a specified date
+-- @param ws_key The name of a workspace to search for, if empty or nil then the
+-- default workspace will be used.
+-- @param journal The name of a journal in the workspace to load, if empty or
+-- nil then the default journal will be used.
+-- @param date A date string of the format `YYYY-MM-DD` or nil to use the
+-- current date.
+-- @see journal.open
+-- @see journal_open_note
 function M.date(ws_name, journal, date)
   if ws_name ~= nil and journal == nil and date == nil then
     date = ws_name

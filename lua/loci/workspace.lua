@@ -2,6 +2,12 @@ local config = require("loci.config")
 
 local M = {}
 
+--- Loads a workspace configuration
+-- @param ws_key The name of a workspace to search for, if empty or nil then the
+-- default workspace will be used.
+-- @return The workspace key in the configuration, or nil if no workspace
+-- was found.
+-- @return The workspace configuration, or nil if no workspace was found.
 function M.open(workspace)
 
   if config.ws ~= nil then

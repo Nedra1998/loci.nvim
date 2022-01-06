@@ -31,6 +31,9 @@ function Stack:len() return self._len end
 
 local buffer_stack = Stack:new()
 
+--- Check if string is a URL
+-- @tparam string string The string to check.
+-- @treturn bool `true` if the string does represent a URL else `false`.
 local function is_url(string)
   -- Table of top-level domains
   local tlds = {
@@ -361,6 +364,10 @@ local function is_url(string)
   return found_url
 end
 
+--- Executes extern comman to open a provided path
+-- Uses `open` on MacOS, and `xdg-open` on other Unix operating systems to open
+-- a provided file/URL with the system default utility.
+-- @treturn bool `true`
 local function follow_external(path)
   if vim.fn.has("mac") == 1 then
     vim.api.nvim_command('silent !open ' .. path .. ' &')
@@ -369,7 +376,6 @@ local function follow_external(path)
   else
     vim.notify("Cannot open paths (" .. path .. ") on your operating system.")
   end
-  vim.notify("Opening URL " .. path .. " in the default browser.")
   return true
 end
 
@@ -377,6 +383,13 @@ local function jump_to_anchor(anchor)
   -- TODO: Implement jumping to anchors/sections
 end
 
+--- Opens the provided file in a new buffer
+-- Opens the provided file path in a new vim buffer. If `create_dirs` has been
+-- set in the configuration it will also create all of the required directories
+-- for that file.
+-- It then pushes the current buffer onto the internal buffer stack.
+-- @treturn bool `true`
+-- @see link.go_back
 local function follow_file(path)
   buffer_stack:push(vim.api.nvim_win_get_buf(0))
   ext = vim.fn.fnamemodify(path, ':e')
@@ -397,6 +410,12 @@ local function follow_file(path)
   return true
 end
 
+--- Extracts the path and anchor component of a markdown link.
+-- Scans the current line and the line above and below for a markdown link that
+-- the cursor is currently over. If a markdown link exists, then it returns the
+-- path component of that link, otherwise it returns nil.
+-- @treturn[1] ?string The path compoenent of the markdown link.
+-- @treturn[2] ?string The anchor compoenent of the markdown link.
 local function get_path()
   local pos = vim.api.nvim_win_get_cursor(0)
   local row, col = pos[1] - 1, pos[2] + 1
@@ -421,6 +440,12 @@ local function get_path()
   return nil
 end
 
+--- Replaces the current selected text with a new markdown link.
+-- In Normal mode, the selected text is the current word under the cursor,
+-- otherwise in visual mode it is the visual selection. The selected text is
+-- escaped and used as the link target destination, with an appended filetype
+-- '.md'.
+-- @tparam ?string The current vim mode, expects either `n` or `v`.
 function M.create(mode)
   local mode = mode or vim.api.nvim_get_mode()['mode']
   local vbegin, vend = nil, nil
@@ -456,6 +481,15 @@ function M.create(mode)
                             vend[2], lines)
 end
 
+--- Attempts to follow a markdown link under the cursor.
+-- If a markdown link exists under the current cursor position, then that link
+-- is opened (in a new buffer or by the system default application).
+-- @see get_path
+-- @see jump_to_anchor
+-- @see follow_external
+-- @see follow_file
+-- @treturn bool `true` if the link exists, and was able to be followed,
+-- otherwise `false`.
 function M.follow()
   local path, anchor = get_path()
   if path == nil then return false end
@@ -474,6 +508,9 @@ function M.follow()
   return true
 end
 
+--- Attempts to follow a link if it exists, otherwise it creates a new link.
+-- @see link.follow
+-- @see link.create
 function M.follow_or_create(mode)
   if not M.follow() then
     return M.create(mode)
@@ -482,6 +519,10 @@ function M.follow_or_create(mode)
   end
 end
 
+--- Returns to previous buffer in the buffer stack.
+-- Pops the top item from the internal buffer stack, and returns to the previous
+-- buffer. Essentially reversing the @{follow_file} function.
+-- @see follow_file
 function M.go_back()
   local bufnr = vim.api.nvim_win_get_buf(0)
   if bufnr > 1 then
