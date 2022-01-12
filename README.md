@@ -20,7 +20,7 @@ This is the README for loci
   - `:LociJournalCurrent [WORKSPACE] [JOURNAL]`
   - `:LociJournalNext [WORKSPACE] [JOURNAL]`
   - `:LociJournal [WORKSPACE] [JOURNAL] [DATE]`
-- [ ] Only create bindings for markdown files in a workspace.
+- [x] Only create bindings for markdown files in a workspace.
 - [x] Create link from text below cursor
   - `:LociLinkCreate`
 - [-] Follow existing link below cursor

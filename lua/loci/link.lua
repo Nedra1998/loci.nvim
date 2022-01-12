@@ -394,13 +394,15 @@ local function follow_file(path)
   buffer_stack:push(vim.api.nvim_win_get_buf(0))
   ext = vim.fn.fnamemodify(path, ':e')
   if ext == nil or ext:len() == 0 then path = path .. '.md' end
-  local fullpath = Path:new(Path:new(path):expand())
 
-  if not fullpath:is_absolute() then
+  if path[1] ~= '/' and path[1] ~= '~' then
     local dir = Path:new(vim.api.nvim_buf_get_name(0)):parent()
-    fullpath = dir:joinpath(fullpath)
+    path = dir:joinpath(path):expand()
+  else
+    path = Path:new(path):expand()
   end
 
+  local fullpath = Path:new(path)
   if config.cfg.create_dirs then
     local dir = fullpath:parent()
     if not dir:exists() then dir:mkdir({parents = true}) end

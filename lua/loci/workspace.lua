@@ -3,7 +3,7 @@ local config = require("loci.config")
 local M = {}
 
 --- Loads a workspace configuration
--- @param ws_key The name of a workspace to search for, if empty or nil then the
+-- @param workspace The name of a workspace to search for, if empty or nil then the
 -- default workspace will be used.
 -- @return The workspace key in the configuration, or nil if no workspace
 -- was found.
@@ -11,7 +11,7 @@ local M = {}
 function M.open(workspace)
 
   if config.ws ~= nil then
-    if workspace ~= nil then
+    if workspace ~= nil and workspace ~= config.ws then
       config.ws = nil
     else
       return config.ws, config.cfg.workspaces[config.ws]
@@ -41,6 +41,7 @@ function M.open(workspace)
   end
 
   if config.ws ~= nil then
+    vim.notify("Loaded workspace " .. workspace, 'info')
     return config.ws, config.cfg.workspaces[config.ws]
   else
     return nil, nil

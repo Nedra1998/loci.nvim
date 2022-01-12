@@ -1,13 +1,13 @@
 local M = {
   cfg = {
+    default_mappings = true,
     create_dirs = true,
     workspaces = {
       ["Loci"] = {
-        path = "~/Loci.2",
+        path = "~/Loci",
         journals = {
-          ['diary'] = {default = true, path = "journal/diary", type = 'daily'},
-          ['notes'] = {path = "journal/notes", type = 'weekly'},
-          ['review'] = {path = "journal/review", type = 'quarterly'}
+          ['diary'] = {default = true, type = 'daily'},
+          ['notes'] = {type = 'weekly'},
         }
       }
     }
