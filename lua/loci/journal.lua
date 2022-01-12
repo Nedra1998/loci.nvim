@@ -1,31 +1,7 @@
-local Path = require('plenary.path')
 local config = require("loci.config")
 local workspace = require('loci.workspace')
 
 local M = {}
-
---- Parse a journal configuration.
--- This function parsers the configuration and construct a table representing
--- the data in the config or default values.
--- @param key The string index for the journal configuration in the config.
--- @param cfg the table/string configuration value from the config.
--- @returns A table containing the key, path to the journal directory, and the
--- method/type of journal that has been configured.
-local function journal_parse_config(key, cfg)
-  local path, method = nil, nil
-  if type(cfg) == 'table' then
-    if cfg['path'] ~= nil then
-      path = cfg['path']
-    else
-      path = key:lower()
-    end
-    method = cfg['type']
-  else
-    path = key:lower()
-    method = cfg
-  end
-  return {key = key, path = path, method = method}
-end
 
 --- Opens a journal note file in a new buffer.
 -- If `create_dirs` is set in the configuration, it will also create any
@@ -33,19 +9,19 @@ end
 -- @param ws A table containing the workspace name as `key`, and the workspace
 -- path as `path`.
 -- @param jnl A table containing the journal name as `key`, the journal path as
--- `path`, and the journal method as `method`.
+-- `path`, and the journal recurrence as `recurrence`.
 -- @param time A UNIX timestamp representing a date/time to open the journal
--- entry for. The value of `jnl.method` will specify the formatting for the
+-- entry for. The value of `jnl.recurrence` will specify the formatting for the
 -- filename.
-local function journal_open_note(ws, jnl, time)
+local function journal_open_note(cfg, time)
   local fname = nil
-  if jnl.method == nil or jnl.method:lower() == 'daily' then
+  if cfg.recurrence == nil or cfg.recurrence:lower() == 'daily' then
     fname = os.date("%Y-%m-%d", time)
-  elseif jnl.method:lower() == 'weekly' then
+  elseif cfg.recurrence:lower() == 'weekly' then
     fname = os.date("%Y-W%V", time)
-  elseif jnl.method:lower() == 'monthly' then
+  elseif cfg.recurrence:lower() == 'monthly' then
     fname = os.date("%Y-M%m", time)
-  elseif jnl.method:lower() == 'quarterly' then
+  elseif cfg.recurrence:lower() == 'quarterly' then
     local month = tonumber(os.date("%m", time))
     if month >= 1 and month <= 3 then
       fname = os.date("%Y-Q1", time)
@@ -56,26 +32,25 @@ local function journal_open_note(ws, jnl, time)
     elseif month >= 10 and month <= 12 then
       fname = os.date("%Y-Q4", time)
     end
-  elseif jnl.method:lower() == 'yearly' then
+  elseif cfg.recurrence:lower() == 'yearly' then
     fname = os.date("%Y", time)
   end
 
   if fname == nil then
-    vim.notify("Loci journal \"" .. ws.key .. "." .. jnl.key ..
-                   "\" has an unrecognized type, possible types include { \"daily\", \"weekly\", \"monthly\", \"quarterly\", \"yearly\" }",
+    vim.notify("Loci journal " .. cfg.key .. " has an unrecognized type \"" ..
+                   cfg.recurrence ..
+                   "\", possible types include { \"daily\", \"weekly\", \"monthly\", \"quarterly\", \"yearly\" }",
                'warning')
     return
   end
 
-  local fullpath =
-      Path:new(Path:new(ws.path, jnl.path, fname .. '.md'):expand())
+  local fullpath = cfg.path .. '/' .. fname .. '.md'
 
   if config.cfg.create_dirs then
-    local dir = fullpath:parent()
-    if not dir:exists() then dir:mkdir({parents = true}) end
+    vim.fn.mkdir(vim.fn.fnamemodify(fullpath, ":h"), "p")
   end
 
-  vim.api.nvim_command('edit ' .. fullpath:absolute())
+  vim.api.nvim_command('edit ' .. fullpath)
 end
 
 --- Loads a journal configuration
@@ -89,50 +64,47 @@ end
 -- was found.
 -- @return The journal configuration, or nil if no journal was found.
 -- @see workspace.open
-function M.open(ws_key, journal)
-  if ws_key ~= nil and journal == nil then
-    journal = ws_key
-    ws_key = nil
+function M.open(wkey, jkey)
+  if wkey ~= nil and jkey == nil then
+    jkey = wkey
+    wkey = nil
   end
-  local ws_name, ws = workspace.open(ws_key)
-  if ws_name == nil or ws == nil then
-    return nil, nil, nil
+  local ws = workspace.open(wkey)
+  if ws == nil then
+    return nil
   elseif ws.journals == nil then
-    vim.notify("Loci workspace \"" .. ws_name ..
+    vim.notify("Loci workspace \"" .. ws.key ..
                    "\" does not have any journals configured.", 'warning')
-    return nil, nil, nil
+    return nil
   end
 
-  jkey = nil
+  local journal = nil
 
-  if journal ~= nil and journal:len() ~= 0 then
+  if jkey ~= nil and jkey:len() ~= 0 then
     local keyset = {}
-    for key, _ in pairs(ws.journals) do
+    for key, value in pairs(ws.journals) do
       table.insert(keyset, key)
-      if key:lower() == journal:lower() then
-        jkey = key
+      if key:lower() == jkey:lower() then
+        journal = vim.tbl_extend('force', value, {key = key})
         break
       end
     end
-    if jkey == nil then
-      vim.notify("No Loci journals with the name \"" .. journal ..
-                     "\" exist in the workspace \"" .. ws_name ..
+    if journal == nil then
+      vim.notify("No Loci journals with the name \"" .. jkey ..
+                     "\" exist in the workspace \"" .. ws.key ..
                      "\", possible journals include " .. vim.inspect(keyset) ..
                      ".", 'warning')
     end
   else
     for key, val in pairs(ws.journals) do
-      if jkey == nil or type(val) == "table" and val['default'] == true then
-        jkey = key
+      if journal == nil and val['default'] == true then
+        journal = vim.tbl_extend('force', val, {key = key})
+        break
       end
     end
   end
 
-  if jkey ~= nil then
-    return ws, jkey, ws.journals[jkey]
-  else
-    return nil, nil, nil
-  end
+  return journal
 end
 
 --- Opens the previous entry in a selected journal
@@ -145,26 +117,25 @@ end
 -- nil then the default journal will be used.
 -- @see journal.open
 -- @see journal_open_note
-function M.previous(ws_name, journal)
-  local ws, jnl, cfg = M.open(ws_name, journal)
-  if ws == nil or jnl == nil or cfg == nil then return end
+function M.previous(wkey, jkey)
+  local cfg = M.open(wkey, jkey)
+  if cfg == nil then return end
 
-  local jnl_cfg = journal_parse_config(jnl, cfg)
   local time = os.time()
 
-  if jnl_cfg.method:lower() == "daily" then
+  if cfg.recurrence:lower() == "daily" then
     time = time - (24 * 60 * 60)
-  elseif jnl_cfg.method:lower() == "weekly" then
+  elseif cfg.recurrence:lower() == "weekly" then
     time = time - (7 * 24 * 60 * 60)
-  elseif jnl_cfg.method:lower() == "monthly" then
+  elseif cfg.recurrence:lower() == "monthly" then
     time = time - (30 * 24 * 60 * 60)
-  elseif jnl_cfg.method:lower() == "quarterly" then
+  elseif cfg.recurrence:lower() == "quarterly" then
     time = time - (3 * 30 * 24 * 60 * 60)
-  elseif jnl_cfg.method:lower() == "yearly" then
+  elseif cfg.recurrence:lower() == "yearly" then
     time = time - (365 * 24 * 60 * 60)
   end
 
-  return journal_open_note({key = ws_name, path = ws.path}, jnl_cfg, time)
+  return journal_open_note(cfg, time)
 end
 
 --- Opens the current entry in a selected journal
@@ -176,12 +147,11 @@ end
 -- @see journal.open
 -- @see journal_open_note
 function M.current(ws_name, journal)
-  local ws, jnl, cfg = M.open(ws_name, journal)
-  if ws == nil or jnl == nil or cfg == nil then return end
+  local cfg = M.open(ws_name, journal)
+  if cfg == nil then return end
 
   local time = os.time()
-  return journal_open_note({key = ws_name, path = ws.path},
-                           journal_parse_config(jnl, cfg), time)
+  return journal_open_note(cfg, time)
 end
 
 --- Opens the next entry in a selected journal
@@ -195,25 +165,24 @@ end
 -- @see journal.open
 -- @see journal_open_note
 function M.next(ws_name, journal)
-  local ws, jnl, cfg = M.open(ws_name, journal)
-  if ws == nil or jnl == nil or cfg == nil then return end
+  local cfg = M.open(ws_name, journal)
+  if cfg == nil then return end
 
-  local jnl_cfg = journal_parse_config(jnl, cfg)
   local time = os.time()
 
-  if jnl_cfg.method:lower() == "daily" then
+  if cfg.recurrence:lower() == "daily" then
     time = time + (24 * 60 * 60)
-  elseif jnl_cfg.method:lower() == "weekly" then
+  elseif cfg.recurrence:lower() == "weekly" then
     time = time + (7 * 24 * 60 * 60)
-  elseif jnl_cfg.method:lower() == "monthly" then
+  elseif cfg.recurrence:lower() == "monthly" then
     time = time + (30 * 24 * 60 * 60)
-  elseif jnl_cfg.method:lower() == "quarterly" then
+  elseif cfg.recurrence:lower() == "quarterly" then
     time = time + (3 * 30 * 24 * 60 * 60)
-  elseif jnl_cfg.method:lower() == "yearly" then
+  elseif cfg.recurrence:lower() == "yearly" then
     time = time + (365 * 24 * 60 * 60)
   end
 
-  return journal_open_note({key = ws_name, path = ws.path}, jnl_cfg, time)
+  return journal_open_note(cfg, time)
 end
 
 --- Opens the journal entry in a selected journal for a given date
@@ -226,33 +195,32 @@ end
 -- current date.
 -- @see journal.open
 -- @see journal_open_note
-function M.date(ws_name, journal, date)
-  if ws_name ~= nil and journal == nil and date == nil then
-    date = ws_name
-    journal = nil
-    ws_name = nil
-  elseif ws_name ~= nil and journal ~= nil and date == nil then
-    date = journal
-    journal = ws_name
-    ws_name = nil
+function M.date(wkey, jkey, date)
+  if wkey ~= nil and jkey == nil and date == nil then
+    date = wkey
+    jkey = nil
+    wkey = nil
+  elseif wkey ~= nil and jkey ~= nil and date == nil then
+    date = jkey
+    jkey = wkey
+    wkey = nil
   end
-  local ws, jnl, cfg = M.open(ws_name, journal)
-  if ws == nil or jnl == nil or cfg == nil then return end
-
-  local jnl_cfg = journal_parse_config(jnl, cfg)
+  local cfg = M.open(wkey, jkey)
+  if cfg == nil then return end
 
   local time = os.time()
   if date ~= nil then
-    local y, m, d = date:match("(%d%d%d%d)-?(%d?%d?)-?(%d?%d?)$")
-    if y == nil or m == nil or d == nil then
+    local y, m, d = date:match("^(%d%d%d%d)[-/ ](%d?%d)[-/ ](%d?%d)$")
+    if y ~= nil and m ~= nil and d ~= nil then
+      time = os.time({year = y, month = m, day = d, hour = 12})
+    else
       vim.notify(
           "loci.journal.date only accepts dates of the format YYYY-MM-DD currently.")
       return
     end
-    time = os.time({year = y, month = m, day = d, hour = 12})
   end
 
-  return journal_open_note({key = ws_name, path = ws.path}, jnl_cfg, time)
+  return journal_open_note(cfg, time)
 end
 
 return M

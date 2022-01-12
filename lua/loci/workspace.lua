@@ -11,19 +11,19 @@ local M = {}
 function M.open(workspace)
 
   if config.ws ~= nil then
-    if workspace ~= nil and workspace ~= config.ws then
+    if workspace ~= nil and workspace ~= config.ws.key then
       config.ws = nil
     else
-      return config.ws, config.cfg.workspaces[config.ws]
+      return config.ws
     end
   end
 
   if workspace ~= nil and workspace:len() ~= 0 then
     local keyset = {}
-    for key, _ in pairs(config.cfg.workspaces) do
+    for key, value in pairs(config.cfg.workspaces) do
       table.insert(keyset, key)
       if key:lower() == workspace:lower() then
-        config.ws = key
+        config.ws = vim.tbl_extend('force', value, {key = key})
         break
       end
     end
@@ -34,18 +34,18 @@ function M.open(workspace)
     end
   else
     for key, val in pairs(config.cfg.workspaces) do
-      if config.ws == nil or type(val) == 'table' and val['default'] == true then
-        config.ws = key
+      if config.ws == nil and val['default'] == true then
+        config.ws = vim.tbl_extend('force', val, {key = key})
+        break
       end
     end
   end
 
   if config.ws ~= nil then
-    vim.notify("Loaded workspace " .. workspace, 'info')
-    return config.ws, config.cfg.workspaces[config.ws]
-  else
-    return nil, nil
+    vim.notify("Loaded workspace " .. config.ws.key, 'info')
   end
+
+  return config.ws
 end
 
 return M

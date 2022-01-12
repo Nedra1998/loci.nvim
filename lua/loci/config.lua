@@ -6,8 +6,8 @@ local M = {
       ["Loci"] = {
         path = "~/Loci",
         journals = {
-          ['diary'] = {default = true, type = 'daily'},
-          ['notes'] = {type = 'weekly'},
+          ['diary'] = {default = true, recurrence = 'daily'},
+          ['notes'] = {recurrence = 'weekly'},
         }
       }
     }
